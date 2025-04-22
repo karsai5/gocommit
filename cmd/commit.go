@@ -4,9 +4,15 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"errors"
+	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 
+	"github.com/cqroot/prompt"
 	"github.com/spf13/cobra"
 )
 
@@ -21,12 +27,81 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		out, err := exec.Command("git", "symbolic-ref", "--short", "HEAD").Output()
-		if err != nil {
-			log.Fatal(err)
+		ticket := getTicketNumberFromBranch()
+		if ticket != "" {
+			fmt.Printf("Got ticket %s from branch name", ticket)
+		} else {
+			fmt.Print("Could not get ticket name from branch")
 		}
-		log.Print(out)
+		commitType := promptForCommitType()
+		messagePrefix := getMessagePrefix(ticket, commitType)
+		msg := promptForCommitMessage(messagePrefix)
+		log.Printf("ticket: %s", ticket)
+		log.Printf("commitType: %s", commitType)
+		log.Printf("message: %s", msg)
+
+		finalMessage := strings.Join([]string{messagePrefix, msg}, " ")
+
+		log.Printf("final: %s", finalMessage)
+		gitCommit(finalMessage)
 	},
+}
+
+func gitCommit(msg string) {
+	res, err := exec.Command("git", "commit", "-m", msg).CombinedOutput()
+	if err != nil {
+		if len(res) != 0 {
+			fmt.Printf("%s", res)
+		}
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", res)
+}
+
+func getMessagePrefix(ticket string, commitType string) string {
+	blocks := []string{}
+	if commitType != "" {
+		blocks = append(blocks, fmt.Sprintf("%s:", commitType))
+	}
+	if ticket != "" {
+		blocks = append(blocks, fmt.Sprintf("[%s]", ticket))
+	}
+	return strings.Join(blocks, " ")
+}
+
+func promptForCommitMessage(s string) string {
+	val, err := prompt.New().Ask(s).Input("Stuff...")
+	CheckErr(err)
+	return val
+}
+
+func promptForCommitType() string {
+	noneType := "None"
+	options := append([]string{"None"}, CommitTypes...)
+	val1, err := prompt.New().Ask("Choose:").Choose(options)
+	CheckErr(err)
+	if val1 == noneType {
+		return ""
+	}
+	return val1
+}
+
+func getTicketNumberFromBranch() string {
+	branchNameBytes, err := exec.Command("git", "symbolic-ref", "--short", "HEAD").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	re, err := regexp.Compile(`[mM][kK][pP]-\d\d\d\d`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	matched := re.FindString(string(branchNameBytes))
+	if matched == "" {
+		return ""
+	}
+	return strings.ToUpper(matched)
 }
 
 func init() {
@@ -41,4 +116,15 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// commitCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func CheckErr(err error) {
+	if err != nil {
+		if errors.Is(err, prompt.ErrUserQuit) {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		} else {
+			panic(err)
+		}
+	}
 }
