@@ -28,17 +28,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ticket := getTicketNumberFromBranch()
-		if ticket != "" {
-			fmt.Printf("Got ticket %s from branch name", ticket)
-		} else {
-			fmt.Print("Could not get ticket name from branch")
-		}
 		commitType := promptForCommitType()
 		messagePrefix := getMessagePrefix(ticket, commitType)
 		msg := promptForCommitMessage(messagePrefix)
-		log.Printf("ticket: %s", ticket)
-		log.Printf("commitType: %s", commitType)
-		log.Printf("message: %s", msg)
 
 		finalMessage := strings.Join([]string{messagePrefix, msg}, " ")
 

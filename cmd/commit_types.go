@@ -7,4 +7,5 @@ var CommitTypes = []string{
 	"ci",
 	"refactor",
 	"tests",
+	"docs",
 }
