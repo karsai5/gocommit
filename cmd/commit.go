@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/cqroot/prompt"
+	"github.com/karsai5/gocommit/cmd/message"
 	"github.com/spf13/cobra"
 )
 
@@ -27,15 +28,24 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ticket := getTicketNumberFromBranch()
-		commitType := promptForCommitType()
-		messagePrefix := getMessagePrefix(ticket, commitType)
-		msg := promptForCommitMessage(messagePrefix)
+		cm, err := message.NewCommitMessage(
+			message.WithTicket(getTicketNumberFromBranch()),
+			message.WithType(promptForCommitType()),
+		)
+		if err != nil {
+			panic(err)
+		}
 
-		finalMessage := strings.Join([]string{messagePrefix, msg}, " ")
+		err = cm.ApplyOption(message.WithOneLineDescription(promptForCommitMessage(cm.Message())))
+		if err != nil {
+			panic(err)
+		}
 
-		log.Printf("final: %s", finalMessage)
-		gitCommit(finalMessage)
+		if err = cm.Valid(); err != nil {
+			panic(err)
+		}
+
+		gitCommit(cm.Message())
 	},
 }
 
