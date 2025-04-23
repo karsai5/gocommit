@@ -43,11 +43,15 @@ func RunPreCommitHook() (output string, err error) {
 	preCommitHookFilePath := fmt.Sprintf("%s/.git/hooks/pre-commit", repoPath)
 
 	if _, err := os.Stat(preCommitHookFilePath); err != nil {
-		fmt.Println("file does not exist: " + preCommitHookFilePath)
 		return "", nil
 	}
 
 	res, err := exec.Command("bash", preCommitHookFilePath).CombinedOutput()
 
+	return string(res), err
+}
+
+func Commit(msg string) (output string, err error) {
+	res, err := exec.Command("git", "commit", "--no-verify", "-m", msg).CombinedOutput()
 	return string(res), err
 }

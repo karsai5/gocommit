@@ -6,9 +6,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/cqroot/prompt"
@@ -30,7 +28,6 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		output, err := git.RunPreCommitHook()
 		println(output)
-
 		if err != nil {
 			panic(err)
 		}
@@ -57,19 +54,12 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
-		gitCommit(cm.Message())
-	},
-}
-
-func gitCommit(msg string) {
-	res, err := exec.Command("git", "commit", "-m", msg).CombinedOutput()
-	if err != nil {
-		if len(res) != 0 {
-			fmt.Printf("%s", res)
+		output, err = git.Commit(cm.Message())
+		println(output)
+		if err != nil {
+			panic(err)
 		}
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", res)
+	},
 }
 
 func getMessagePrefix(ticket string, commitType string) string {
