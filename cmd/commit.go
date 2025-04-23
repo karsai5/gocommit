@@ -72,7 +72,7 @@ func getMessagePrefix(ticket string, commitType string) string {
 }
 
 func promptForCommitMessage(s string) string {
-	val, err := prompt.New().Ask(s).Input("Stuff...")
+	val, err := prompt.New().Ask(s).Input("One line message...")
 	CheckErr(err)
 	return val
 }
