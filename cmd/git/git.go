@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,7 +52,65 @@ func RunPreCommitHook() (output string, err error) {
 	return string(res), err
 }
 
-func Commit(msg string) (output string, err error) {
-	res, err := exec.Command("git", "commit", "--no-verify", "-m", msg).CombinedOutput()
-	return string(res), err
+type commitOptions struct {
+	message  string
+	noVerify bool
 }
+
+func (co *commitOptions) Cmd() *exec.Cmd {
+	args := []string{"commit"}
+	if co.noVerify == true {
+		args = append(args, "--no-verify")
+	}
+
+	args = append(args, "-m", co.message)
+
+	return exec.Command("git", args...)
+}
+
+type CommitOptionsFunc func(o *commitOptions) error
+
+func WithNoVerify() CommitOptionsFunc {
+	return func(o *commitOptions) error {
+		o.noVerify = true
+		return nil
+	}
+}
+
+func WithMessage(msg string) CommitOptionsFunc {
+	return func(o *commitOptions) error {
+		if msg == "" {
+			return errors.New("Message cannot be empty.")
+		}
+		o.message = msg
+		return nil
+	}
+}
+
+func NewCommit(msg string, opts ...CommitOptionsFunc) (*commitOptions, error) {
+	opts = append(opts, WithMessage(msg))
+
+	var co commitOptions
+	for _, opt := range opts {
+		err := opt(&co)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &co, nil
+}
+
+// func Commit(msg string, optFuncs ...CommitOptionsFunc) (output string, err error) {
+// 	co, err := NewCommit(msg, optFuncs...)
+// 	if err != nil {
+// 		return "", err
+// 	}
+
+// 	arguments := []string{
+// 		"commit",
+// 	}
+// 	arguments = append(arguments, co.Arguments()...)
+
+// 	res, err := exec.Command("git", arguments...).CombinedOutput()
+// 	return string(res), err
+// }

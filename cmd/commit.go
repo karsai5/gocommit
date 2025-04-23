@@ -45,7 +45,8 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
-		err = cm.ApplyOption(message.WithOneLineDescription(promptForCommitMessage(cm.Message())))
+		oneLineDescription := promptForCommitMessage(cm.Message())
+		err = cm.ApplyOption(message.WithOneLineDescription(oneLineDescription))
 		if err != nil {
 			panic(err)
 		}
@@ -54,8 +55,13 @@ to quickly create a Cobra application.`,
 			panic(err)
 		}
 
-		output, err = git.Commit(cm.Message())
-		println(output)
+		commit, err := git.NewCommit(cm.Message(), git.WithNoVerify())
+		if err != nil {
+			panic(err)
+		}
+
+		cmdOutput, err := commit.Cmd().CombinedOutput()
+		println(string(cmdOutput))
 		if err != nil {
 			panic(err)
 		}
