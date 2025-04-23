@@ -9,10 +9,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/cqroot/prompt"
+	"github.com/karsai5/gocommit/cmd/git"
 	"github.com/karsai5/gocommit/cmd/message"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +28,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		output, err := git.RunPreCommitHook()
+		println(output)
+
+		if err != nil {
+			panic(err)
+		}
+
+		ticketNumber, err := git.TicketNumberFromBranchName()
+		if err != nil {
+			panic(err)
+		}
+
 		cm, err := message.NewCommitMessage(
-			message.WithTicket(getTicketNumberFromBranch()),
+			message.WithTicket(ticketNumber),
 			message.WithType(promptForCommitType()),
 		)
 		if err != nil {
@@ -86,24 +98,6 @@ func promptForCommitType() string {
 		return ""
 	}
 	return val1
-}
-
-func getTicketNumberFromBranch() string {
-	branchNameBytes, err := exec.Command("git", "symbolic-ref", "--short", "HEAD").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	re, err := regexp.Compile(`[mM][kK][pP]-\d\d\d\d`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	matched := re.FindString(string(branchNameBytes))
-	if matched == "" {
-		return ""
-	}
-	return strings.ToUpper(matched)
 }
 
 func init() {
