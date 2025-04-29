@@ -26,6 +26,16 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		numStagedFiles, err := git.NumberOfStagedFiles()
+		if err != nil {
+			panic(err)
+		}
+
+		if numStagedFiles == 0 {
+			fmt.Println("No staged files to commit.")
+			os.Exit(1)
+		}
+
 		output, err := git.RunPreCommitHook()
 		println(output)
 		if err != nil {

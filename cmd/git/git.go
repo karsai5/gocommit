@@ -27,6 +27,25 @@ func TicketNumberFromBranchName() (string, error) {
 	return strings.ToUpper(matched), nil
 }
 
+func NumberOfStagedFiles() (int, error) {
+	output, err := exec.Command("git", "diff", "--cached", "--name-only").CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get git status: %s: %w", output, err)
+	}
+	lines := removeEmptyStrings(strings.Split(string(output), "\n"))
+	return len(lines), nil
+}
+
+func removeEmptyStrings(input []string) []string {
+	var result []string
+	for _, str := range input {
+		if strings.TrimSpace(str) != "" {
+			result = append(result, str)
+		}
+	}
+	return result
+}
+
 func RepoPath() (string, error) {
 	path, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
