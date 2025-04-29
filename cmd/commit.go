@@ -7,13 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/cqroot/prompt"
 	"github.com/karsai5/gocommit/cmd/git"
 	"github.com/karsai5/gocommit/cmd/message"
 	"github.com/spf13/cobra"
 )
+
+var noVerifyFlag bool
 
 // commitCmd represents the commit command
 var commitCmd = &cobra.Command{
@@ -36,10 +37,12 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 
-		output, err := git.RunPreCommitHook()
-		println(output)
-		if err != nil {
-			panic(err)
+		if !noVerifyFlag {
+			output, err := git.RunPreCommitHook()
+			println(output)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		ticketNumber, err := git.TicketNumberFromBranchName()
@@ -78,17 +81,6 @@ to quickly create a Cobra application.`,
 	},
 }
 
-func getMessagePrefix(ticket string, commitType string) string {
-	blocks := []string{}
-	if commitType != "" {
-		blocks = append(blocks, fmt.Sprintf("%s:", commitType))
-	}
-	if ticket != "" {
-		blocks = append(blocks, fmt.Sprintf("[%s]", ticket))
-	}
-	return strings.Join(blocks, " ")
-}
-
 func promptForCommitMessage(s string) string {
 	val, err := prompt.New().Ask(s).Input("One line message...")
 	CheckErr(err)
@@ -108,6 +100,8 @@ func promptForCommitType() string {
 
 func init() {
 	rootCmd.AddCommand(commitCmd)
+
+	commitCmd.PersistentFlags().BoolVarP(&noVerifyFlag, "no-verify", "n", false, "Skip pre-commit hook")
 
 	// Here you will define your flags and configuration settings.
 
